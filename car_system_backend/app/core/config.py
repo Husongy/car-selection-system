@@ -1,6 +1,6 @@
-from typing import List
-from pydantic_settings import BaseSettings
-from pydantic import validator
+from typing import List, Union
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator, Field
 
 
 class Settings(BaseSettings):
@@ -22,21 +22,23 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str = ""
     
-    # CORS配置
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:5173",
-        "http://localhost:3000"
-    ]
+    # CORS配置 (逗号分隔的字符串，会自动转换为列表)
+    ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
     
-    @validator("ALLOWED_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v):
-        if isinstance(v, str):
-            return [i.strip() for i in v.split(",")]
-        return v
+    @field_validator("ALLOWED_ORIGINS", mode="after")
+    @classmethod
+    def parse_cors_origins(cls, v: str) -> List[str]:
+        if isinstance(v, str) and v:
+            return [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return v
+        return ["http://localhost:5173", "http://localhost:3000"]
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore"
+    )
 
 
 settings = Settings()
