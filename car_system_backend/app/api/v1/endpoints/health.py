@@ -1,7 +1,13 @@
 from fastapi import APIRouter
-from app.schemas.response import HealthResponse
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class HealthResponse(BaseModel):
+    """健康检查响应"""
+    status: str
+    message: str
 
 
 @router.get("/health", response_model=HealthResponse)
