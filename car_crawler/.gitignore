@@ -1,0 +1,19 @@
+# Scrapy
+*.pyc
+__pycache__/
+.scrapy/
+httpcache/
+
+# Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
