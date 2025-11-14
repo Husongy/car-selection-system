@@ -1,21 +1,17 @@
+"""
+健康检查接口
+用于验证后端服务是否正常运行
+"""
 from fastapi import APIRouter
-from pydantic import BaseModel
 
 router = APIRouter()
 
 
-class HealthResponse(BaseModel):
-    """健康检查响应"""
-    status: str
-    message: str
-
-
-@router.get("/health", response_model=HealthResponse)
+@router.get("/health", summary="健康检查")
 async def health_check():
     """
     健康检查接口
-    
-    返回系统运行状态
+    返回服务运行状态
     """
     return {
         "status": "ok",

@@ -1,23 +1,24 @@
+"""
+Alembic环境配置文件
+负责数据库连接和迁移脚本的执行
+"""
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 from alembic import context
 import os
 import sys
 
-# 添加项目根目录到Python路径
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+# 将项目根目录添加到Python路径
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.core.config import settings
-from app.core.database import Base
-# 导入所有模型，确保被Alembic识别
-from app.models import *
+from app.models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# 从环境变量设置数据库URL
+# 从环境变量设置数据库连接URL
 config.set_main_option('sqlalchemy.url', settings.SYNC_DATABASE_URL)
 
 # Interpret the config file for Python logging.

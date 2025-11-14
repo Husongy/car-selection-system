@@ -22,28 +22,44 @@ wheels/
 
 # Virtual Environment
 venv/
-env/
 ENV/
-.venv
+env/
+.venv/
 
-# Environment Variables
-.env
-.env.local
-
-# IDE
-.idea/
+# IDEs
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
 # Database
 *.db
+*.sqlite
 *.sqlite3
 
 # Logs
 *.log
+logs/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Alembic
+# 保留versions目录但忽略其中的迁移文件（根据需要调整）
+# alembic/versions/*.py
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
+*.bak
