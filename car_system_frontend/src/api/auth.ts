@@ -1,7 +1,16 @@
 /**
- * 用户认证API
+ * 用户认证API服务
  */
 import request from './request'
+
+/**
+ * API响应基础类型
+ */
+export interface ApiResponse<T> {
+  code: number
+  message: string
+  data: T
+}
 
 /**
  * 用户注册参数
@@ -75,7 +84,7 @@ export const getUserInfo = () => {
  * 退出登录
  */
 export const logout = () => {
-  return request({
+  return request<null>({
     url: '/api/v1/auth/logout',
     method: 'post'
   })

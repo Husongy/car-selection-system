@@ -37,12 +37,13 @@ service.interceptors.response.use(
       return Promise.reject(new Error(res.message || 'Error'))
     }
     
-    return res
+    // 返回 data 字段，而不是整个 res
+    return res.data
   },
   (error) => {
     console.error('响应错误:', error.message)
     
-    // 处理8001未授权错误
+    // 处理401未授权错误
     if (error.response && error.response.status === 401) {
       // 清除token
       localStorage.removeItem('token')

@@ -126,10 +126,12 @@ const loginLoading = ref(false)
 
 const loginRules: FormRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' }
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 50, message: '用户名长度为3-50个字符', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' }
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码至少6个字符', trigger: 'blur' }
   ]
 }
 
@@ -167,34 +169,55 @@ const registerRules: FormRules = {
   ]
 }
 
-// 处理登录
+/**
+ * 处理登录
+ */
 const handleLogin = async () => {
   if (!loginFormRef.value) return
   
   try {
+    // 表单验证
     await loginFormRef.value.validate()
+    
     loginLoading.value = true
     
-    await userStore.login(loginForm.value.username, loginForm.value.password)
+    // 调用登录接口
+    const result = await userStore.login(
+      loginForm.value.username,
+      loginForm.value.password
+    )
     
-    message.success('登录成功')
-    router.push('/')
+    if (result.success) {
+      message.success('登录成功')
+      // 跳转到首页
+      await router.push('/')
+    } else {
+      message.error(result.message || '登录失败')
+    }
   } catch (error: any) {
     console.error('登录失败:', error)
-    message.error(error.message || '登录失败')
+    // 表单验证失败会抛出异常，不需要显示错误提示
+    if (error.message && !error.message.includes('验证')) {
+      message.error(error.message)
+    }
   } finally {
     loginLoading.value = false
   }
 }
 
-// 处理注册
+/**
+ * 处理注册
+ */
 const handleRegister = async () => {
   if (!registerFormRef.value) return
   
   try {
+    // 表单验证
     await registerFormRef.value.validate()
+    
     registerLoading.value = true
     
+    // 调用注册接口
     await registerApi({
       username: registerForm.value.username,
       password: registerForm.value.password,
@@ -216,7 +239,17 @@ const handleRegister = async () => {
     }
   } catch (error: any) {
     console.error('注册失败:', error)
-    message.error(error.message || '注册失败')
+    
+    // 提取错误信息
+    let errorMessage = '注册失败'
+    
+    if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail
+    } else if (error.message && !error.message.includes('验证')) {
+      errorMessage = error.message
+    }
+    
+    message.error(errorMessage)
   } finally {
     registerLoading.value = false
   }

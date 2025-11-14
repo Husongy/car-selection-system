@@ -3,13 +3,13 @@
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+
 from app.core.database import get_async_db
-from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.deps import get_current_user
 from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
 from app.schemas.response import Response
+from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth")
 
@@ -26,49 +26,23 @@ async def register(
     - **password**: 密码（至少6个字符）
     - **email**: 邮箱（可选）
     """
-    # 检查用户名是否已存在
-    result = await db.execute(
-        select(User).where(User.username == user_data.username)
-    )
-    existing_user = result.scalar_one_or_none()
-    
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="用户名已存在"
-        )
-    
-    # 检查邮箱是否已存在
-    if user_data.email:
-        result = await db.execute(
-            select(User).where(User.email == user_data.email)
-        )
-        existing_email = result.scalar_one_or_none()
+    try:
+        # 创建用户
+        new_user = await AuthService.create_user(db, user_data)
         
-        if existing_email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="邮箱已被注册"
-            )
-    
-    # 创建新用户
-    new_user = User(
-        username=user_data.username,
-        email=user_data.email,
-        hashed_password=get_password_hash(user_data.password),
-        is_active=True,
-        is_superuser=False
-    )
-    
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
-    
-    return Response(
-        code=200,
-        message="注册成功",
-        data=UserResponse.model_validate(new_user)
-    )
+        return Response(
+            code=200,
+            message="注册成功",
+            data=UserResponse.model_validate(new_user)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"注册错误: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="注册失败，请稍后重试"
+        )
 
 
 @router.post("/login", response_model=Response[Token], summary="用户登录")
@@ -84,35 +58,47 @@ async def login(
     
     返回JWT访问令牌
     """
-    # 查询用户
-    result = await db.execute(
-        select(User).where(User.username == user_data.username)
-    )
-    user = result.scalar_one_or_none()
-    
-    # 验证用户和密码
-    if not user or not verify_password(user_data.password, user.hashed_password):  # type: ignore
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码错误",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        # 验证用户
+        user = await AuthService.authenticate_user(
+            db,
+            user_data.username,
+            user_data.password
         )
-    
-    # 检查用户是否激活
-    if not user.is_active:  # type: ignore
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="用户已被禁用"
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="用户名或密码错误",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # 检查用户是否激活
+        if not user.is_active:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="用户已被禁用"
+            )
+        
+        # 生成token
+        access_token = AuthService.generate_token(user)
+        
+        return Response(
+            code=200,
+            message="登录成功",
+            data=Token(access_token=access_token, token_type="bearer")
         )
-    
-    # 创建访问令牌
-    access_token = create_access_token(data={"sub": user.username})
-    
-    return Response(
-        code=200,
-        message="登录成功",
-        data=Token(access_token=access_token, token_type="bearer")
-    )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"登录错误: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"登录失败: {str(e)}"
+        )
 
 
 @router.get("/me", response_model=Response[UserResponse], summary="获取当前用户信息")
