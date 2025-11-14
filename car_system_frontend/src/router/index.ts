@@ -17,6 +17,14 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '智能选车'
     }
+  },
+  {
+    path: '/sales-ranking',
+    name: 'SalesRanking',
+    component: () => import('@/views/SalesRanking.vue'),
+    meta: {
+      title: '销量榜单'
+    }
   }
 ]
 

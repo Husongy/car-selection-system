@@ -3,7 +3,7 @@ import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 
 // 创建axios实例
 const service: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: '/',  // 修改为/，因为vite代理已经将/api转发到后端
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json;charset=utf-8'

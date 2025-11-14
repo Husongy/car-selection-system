@@ -9,6 +9,6 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,  # 开发环境开启热重载
+        reload=True,  # 开启热重载
         log_level="info"
     )
