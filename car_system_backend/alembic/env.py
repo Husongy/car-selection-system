@@ -75,7 +75,15 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            # 解决MySQL外键检查兼容性问题
+            render_as_batch=True,
+            compare_type=True,
+            # 完全禁用外键检测，避免 TABLENAME 错误
+            include_object=lambda obj, name, type_, reflected, compare_to: type_ not in ["foreign_key", "unique_constraint"] if reflected else True,
+            # 不比较外键
+            compare_server_default=False
         )
 
         with context.begin_transaction():

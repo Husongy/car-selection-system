@@ -1,6 +1,40 @@
 <template>
   <div class="home-container">
     <n-space vertical :size="24">
+      <!-- 用户信息栏 -->
+      <n-card v-if="userStore.token">
+        <n-space justify="space-between" align="center">
+          <n-space align="center">
+            <n-avatar round size="large">
+              {{ userStore.userInfo?.username.charAt(0).toUpperCase() }}
+            </n-avatar>
+            <div>
+              <div style="font-size: 16px; font-weight: bold;">
+                欢迎，{{ userStore.userInfo?.username }}
+              </div>
+              <n-tag v-if="userStore.userInfo?.is_superuser" type="warning" size="small">
+                管理员
+              </n-tag>
+              <n-tag v-else type="info" size="small">
+                普通用户
+              </n-tag>
+            </div>
+          </n-space>
+          <n-button @click="handleLogout" secondary>
+            退出登录
+          </n-button>
+        </n-space>
+      </n-card>
+      
+      <n-card v-else>
+        <n-space justify="space-between" align="center">
+          <n-text>您尚未登录，请先登录</n-text>
+          <n-button type="primary" @click="goToLogin">
+            去登录
+          </n-button>
+        </n-space>
+      </n-card>
+
       <!-- 欢迎横幅 -->
       <n-card>
         <n-space vertical align="center">
@@ -49,6 +83,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useMessage } from 'naive-ui'
+import { useUserStore } from '@/stores/user'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -61,7 +97,7 @@ import {
 import type { EChartsOption } from 'echarts'
 import { getStatistics } from '@/api/home'
 
-// 注册 ECharts 组件
+// 注册ECharts组件
 use([
   CanvasRenderer,
   PieChart,
@@ -71,6 +107,8 @@ use([
 ])
 
 const router = useRouter()
+const message = useMessage()
+const userStore = useUserStore()
 
 // 统计数据
 const statisticsData = ref({
@@ -116,6 +154,21 @@ const chartOption = ref<EChartsOption>({
 // 跳转到选车页面
 const goToSelectCar = () => {
   router.push('/select-car')
+}
+
+// 跳转到登录页面
+const goToLogin = () => {
+  router.push('/login')
+}
+
+// 退出登录
+const handleLogout = async () => {
+  try {
+    await userStore.logout()
+    message.success('退出登录成功')
+  } catch (error) {
+    console.error('退出登录失败:', error)
+  }
 }
 
 // 加载统计数据

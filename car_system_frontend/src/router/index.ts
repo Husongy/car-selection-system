@@ -11,6 +11,14 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/Login.vue'),
+    meta: {
+      title: '用户登录'
+    }
+  },
+  {
     path: '/select-car',
     name: 'SelectCar',
     component: () => import('@/views/SelectCar.vue'),
@@ -24,6 +32,14 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/SalesRanking.vue'),
     meta: {
       title: '销量榜单'
+    }
+  },
+  {
+    path: '/analysis',
+    name: 'Analysis',
+    component: () => import('@/views/Analysis.vue'),
+    meta: {
+      title: '可视化分析'
     }
   }
 ]

@@ -7,5 +7,6 @@ from app.models.brand import Brand
 from app.models.series import Series
 from app.models.car_model import CarModel
 from app.models.sales_data import SalesData
+from app.models.user import User
 
-__all__ = ["Base", "Brand", "Series", "CarModel", "SalesData"]
+__all__ = ["Base", "Brand", "Series", "CarModel", "SalesData", "User"]

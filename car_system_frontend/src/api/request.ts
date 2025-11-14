@@ -41,6 +41,19 @@ service.interceptors.response.use(
   },
   (error) => {
     console.error('响应错误:', error.message)
+    
+    // 处理8001未授权错误
+    if (error.response && error.response.status === 401) {
+      // 清除token
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      
+      // 跳转到登录页（如果不在登录页）
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+    }
+    
     return Promise.reject(error)
   }
 )
