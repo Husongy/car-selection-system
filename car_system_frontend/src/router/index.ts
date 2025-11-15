@@ -41,6 +41,31 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '可视化分析'
     }
+  },
+  // Django 后端页面
+  {
+    path: '/django/sales-rank',
+    name: 'DjangoSalesRank',
+    component: () => import('@/views/DjangoSalesRank.vue'),
+    meta: {
+      title: '销量排行榜 (Django)'
+    }
+  },
+  {
+    path: '/django/analysis',
+    name: 'DjangoAnalysis',
+    component: () => import('@/views/DjangoAnalysis.vue'),
+    meta: {
+      title: '价格分布分析 (Django)'
+    }
+  },
+  {
+    path: '/django/select-car',
+    name: 'DjangoSelectCar',
+    component: () => import('@/views/DjangoSelectCar.vue'),
+    meta: {
+      title: '条件选车 (Django)'
+    }
   }
 ]
 
