@@ -7,19 +7,21 @@
             <n-layout-header bordered style="height: 64px; padding: 0 24px; display: flex; align-items: center;">
               <div class="logo" style="display: flex; align-items: center;">
                 <!-- SVG Logo -->
-                <svg width="40" height="40" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="margin-right: 12px;">
-                  <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(24, 160, 88, 0.3)" stroke-width="2"/>
-                  <circle cx="100" cy="100" r="75" fill="none" stroke="rgba(24, 160, 88, 0.5)" stroke-width="3"/>
-                  <path d="M 100 40 L 85 100 L 105 100 L 90 160 L 130 90 L 110 90 L 125 40 Z" 
-                        fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
-                  <ellipse cx="70" cy="140" rx="15" ry="15" fill="#18A058" opacity="0.9"/>
-                  <ellipse cx="70" cy="140" rx="8" ry="8" fill="rgba(24, 160, 88, 0.8)"/>
-                  <ellipse cx="130" cy="140" rx="15" ry="15" fill="#18A058" opacity="0.9"/>
-                  <ellipse cx="130" cy="140" rx="8" ry="8" fill="rgba(24, 160, 88, 0.8)"/>
-                  <path d="M 50 130 Q 60 110 80 105 L 120 105 Q 140 110 150 130" 
-                        fill="none" stroke="#18A058" stroke-width="4" stroke-linecap="round"/>
+                <svg width="50" height="50" xmlns="http://www.w3.org/2000/svg" style="margin-right: 12px;">
+                  <!-- 外圈 -->
+                  <circle cx="25" cy="25" r="22" fill="none" stroke="#18A058" stroke-width="2"/>
+                  
+                  <!-- 叶子装饰 -->
+                  <path d="M25,8 Q27.5,5 30,8 Q27.5,11 25,8" fill="#00E676"/>
+                  <path d="M20,8 Q22.5,5 25,8 Q22.5,11 20,8" fill="#00E676"/>
+                  
+                  <!-- 中间文字 -->
+                  <text x="25" y="29" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#18A058" text-anchor="middle">HoH</text>
+                  
+                  <!-- 电符号装饰 -->
+                  <path d="M25,37 L26.5,40 L28,37 L26.5,38 Z" fill="#FFD700"/>
                 </svg>
-                <h2 style="margin: 0; font-size: 20px; color: #18a058;">🚗 新能源汽车智能选车系统</h2>
+                <h2 style="margin: 0; font-size: 20px; color: #18a058;">新能源汽车智能选车系统</h2>
               </div>
               <n-menu
                 :value="activeKey"

@@ -6,39 +6,25 @@
         <!-- Logo 设计 -->
         <div class="logo-container">
           <div class="logo">
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-              <!-- 外圆环 -->
-              <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
-              <circle cx="100" cy="100" r="75" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
+            <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+              <!-- 外圈 -->
+              <circle cx="100" cy="100" r="90" fill="none" stroke="#FFFFFF" stroke-width="3"/>
               
-              <!-- 闪电符号（电能） -->
-              <path d="M 100 40 L 85 100 L 105 100 L 90 160 L 130 90 L 110 90 L 125 40 Z" 
-                    fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+              <!-- 叶子装饰 -->
+              <path d="M100,30 Q110,20 120,30 Q110,40 100,30" fill="#00E676"/>
+              <path d="M80,30 Q90,20 100,30 Q90,40 80,30" fill="#00E676"/>
               
-              <!-- 汽车轮廊 -->
-              <ellipse cx="70" cy="140" rx="15" ry="15" fill="#fff" opacity="0.9"/>
-              <ellipse cx="70" cy="140" rx="8" ry="8" fill="rgba(102, 126, 234, 0.8)"/>
-              <ellipse cx="130" cy="140" rx="15" ry="15" fill="#fff" opacity="0.9"/>
-              <ellipse cx="130" cy="140" rx="8" ry="8" fill="rgba(102, 126, 234, 0.8)"/>
+              <!-- 中间文字 -->
+              <text x="100" y="105" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#FFFFFF" text-anchor="middle">HoH</text>
+              <text x="100" y="135" font-family="Arial, sans-serif" font-size="14" fill="rgba(255,255,255,0.9)" text-anchor="middle">新能源选车系统</text>
               
-              <!-- 车身 -->
-              <path d="M 50 130 Q 60 110 80 105 L 120 105 Q 140 110 150 130" 
-                    fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+              <!-- 电符号装饰 -->
+              <path d="M100,150 L105,160 L110,150 L105,155 Z" fill="#FFD700"/>
               
-              <!-- 装饰线 -->
-              <circle cx="100" cy="100" r="95" fill="none" stroke="url(#gradient)" stroke-width="1" 
-                      stroke-dasharray="5,5" opacity="0.6">
-                <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" 
-                                  dur="20s" repeatCount="indefinite"/>
+              <!-- 装饰圆点 -->
+              <circle cx="100" cy="100" r="95" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="5,5">
+                <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
               </circle>
-              
-              <!-- 渐变定义 -->
-              <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#fff;stop-opacity:1" />
-                  <stop offset="100%" style="stop-color:#FFD700;stop-opacity:1" />
-                </linearGradient>
-              </defs>
             </svg>
           </div>
         </div>
