@@ -138,7 +138,7 @@
                 <template #cover>
                   <div class="car-image-wrapper">
                     <img
-                      :src="car.image || 'https://via.placeholder.com/400x300?text=No+Image'"
+                      :src="car.image || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE4IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+5pqC5peg5Zu+54mHPC90ZXh0Pjwvc3ZnPg=='"
                       :alt="car.name"
                       class="car-image"
                     />
@@ -205,7 +205,6 @@
             <n-pagination
               v-model:page="currentPage"
               v-model:page-size="pageSize"
-              :page-count="selectCarStore.totalPages"
               :item-count="selectCarStore.pagination.total"
               show-size-picker
               :page-sizes="[12, 24, 36, 48]"
@@ -285,11 +284,18 @@ const sortOptions = [
  */
 const loadBrands = async () => {
   try {
-    const response = await getBrands({ page: 1, pageSize: 100 })
-    brandOptions.value = response.data.map((brand: any) => ({
+    const response = await getBrands({ page: 1, pageSize: 100 }) as any
+    console.log('品牌列表响应:', response)
+    
+    // Django后端返回: {code: 200, data: [...], total: xx}
+    const brands = (response && response.data && Array.isArray(response.data)) ? response.data : []
+    
+    brandOptions.value = brands.map((brand: any) => ({
       label: brand.name,
       value: brand.id
     }))
+    
+    console.log('品牌选项:', brandOptions.value)
   } catch (error) {
     console.error('加载品牌列表失败:', error)
   }
@@ -300,11 +306,11 @@ const loadBrands = async () => {
  */
 const loadFilterOptions = async () => {
   try {
-    const response = await getFilterOptions()
+    const response = await getFilterOptions() as any
     console.log('筛选选项响应:', response)
     
-    // 处理响应数据（可能包含在data字段中）
-    const options = (response as any).data || response
+    // Django后端返回: {code: 200, data: {energy_types: [...], seats: [...], levels: [...]}}
+    const options = response.data || {}
     
     // 能源类型选项
     if (options.energy_types && Array.isArray(options.energy_types)) {
@@ -380,12 +386,12 @@ const loadCarList = async () => {
     console.log('查询参数:', params)
     
     // 请求数据
-    const response = await queryCars(params)
+    const response = await queryCars(params) as any
     
     console.log('API响应:', response)
     
-    // 检查响应数据结构
-    if (response && response.data) {
+    // Django后端返回格式: {code: 200, data: [...], total: xx, page: xx, page_size: xx}
+    if (response && response.data && Array.isArray(response.data)) {
       // 更新store
       selectCarStore.updateCarList(response.data, response.total || 0)
       selectCarStore.setPage(response.page || currentPage.value)

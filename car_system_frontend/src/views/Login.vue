@@ -1,12 +1,13 @@
 <template>
   <div class="login-container">
-    <!-- 左侧展示区 -->
-    <div class="login-left">
+    <div class="login-wrapper">
+      <!-- 左侧展示区 -->
+      <div class="login-left">
       <div class="system-info">
         <!-- Logo 设计 -->
         <div class="logo-container">
           <div class="logo">
-            <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+            <svg width="120" height="120" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
               <!-- 外圈 -->
               <circle cx="100" cy="100" r="90" fill="none" stroke="#FFFFFF" stroke-width="3"/>
               
@@ -141,8 +142,9 @@
         </n-form>
         
         <div class="login-tips">
-          <p>还没有账号？<a href="#">立即注册</a></p>
+          <p>还没有账号？<a @click="goToRegister">立即注册</a></p>
         </div>
+      </div>
       </div>
     </div>
   </div>
@@ -192,47 +194,54 @@ const handleLogin = async () => {
     
     loginLoading.value = true
     
-    // 在控制台打印表单数据
-    console.log('登录表单数据:', {
-      username: loginForm.value.username,
-      password: loginForm.value.password
-    })
+    // 使用 Django 后端登录
+    const result = await userStore.loginDjango(
+      loginForm.value.username,
+      loginForm.value.password
+    )
     
-    // 模拟登录延迟
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // 模拟登录成功 - 直接设置用户信息到 store
-    const mockToken = 'mock-token-' + Date.now()
-    const mockUserInfo = {
-      id: 1,
-      username: loginForm.value.username,
-      email: loginForm.value.username + '@example.com',
-      is_superuser: loginForm.value.username === 'admin', // admin 用户为管理员
-      is_active: true,
-      created_at: new Date().toISOString()
+    if (result.success) {
+      message.success(result.message)
+      
+      // 检查是否有重定向地址
+      const redirect = router.currentRoute.value.query.redirect as string
+      await router.push(redirect || '/')
+    } else {
+      message.error(result.message)
     }
-    
-    // 保存到 store
-    userStore.setToken(mockToken)
-    userStore.setUserInfo(mockUserInfo)
-    
-    message.success('登录成功')
-    
-    // 跳转到首页
-    await router.push('/')
   } catch (error: any) {
     console.error('表单验证失败:', error)
   } finally {
     loginLoading.value = false
   }
 }
+
+/**
+ * 跳转到注册页
+ */
+const goToRegister = () => {
+  router.push('/register')
+}
 </script>
 
 <style scoped>
 .login-container {
   display: flex;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
   background: #f0f2f5;
+  padding: 20px;
+}
+
+/* 内容包裹器 */
+.login-wrapper {
+  display: flex;
+  max-width: 1200px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 /* 左侧展示区 */
@@ -242,9 +251,9 @@ const handleLogin = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 60px;
+  padding: 60px 40px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .login-left::before {
@@ -270,6 +279,7 @@ const handleLogin = async () => {
 
 .system-info {
   max-width: 500px;
+  width: 100%;
   color: white;
   position: relative;
   z-index: 1;
@@ -283,8 +293,8 @@ const handleLogin = async () => {
 }
 
 .logo {
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   animation: logoFloat 3s ease-in-out infinite;
 }
 
@@ -309,7 +319,7 @@ const handleLogin = async () => {
 }
 
 .system-header h1 {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 600;
   margin: 0;
   color: white;
@@ -317,20 +327,20 @@ const handleLogin = async () => {
 }
 
 .system-slogan {
-  font-size: 18px;
-  margin-bottom: 50px;
+  font-size: 16px;
+  margin-bottom: 40px;
   opacity: 0.95;
 }
 
 .features {
-  margin-bottom: 50px;
+  margin-bottom: 40px;
 }
 
 .feature-item {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 30px;
-  padding: 20px;
+  margin-bottom: 20px;
+  padding: 16px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   backdrop-filter: blur(10px);
@@ -343,25 +353,25 @@ const handleLogin = async () => {
 }
 
 .feature-icon {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 20px;
+  margin-right: 16px;
   flex-shrink: 0;
 }
 
 .feature-content h3 {
-  font-size: 18px;
-  margin: 0 0 8px 0;
+  font-size: 16px;
+  margin: 0 0 6px 0;
   font-weight: 500;
 }
 
 .feature-content p {
-  font-size: 14px;
+  font-size: 13px;
   margin: 0;
   opacity: 0.9;
 }
@@ -369,8 +379,8 @@ const handleLogin = async () => {
 .stats {
   display: flex;
   justify-content: space-around;
-  margin-bottom: 40px;
-  padding: 30px 0;
+  margin-bottom: 30px;
+  padding: 24px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -380,9 +390,9 @@ const handleLogin = async () => {
 }
 
 .stat-value {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .stat-label {
@@ -403,16 +413,16 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   background: white;
-  padding: 40px;
+  padding: 60px 40px;
 }
 
 .form-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 100%;
   background: white;
-  border-radius: 16px;
-  padding: 50px 40px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border-radius: 0;
+  padding: 40px 30px;
+  box-shadow: none;
 }
 
 .form-title {
@@ -441,6 +451,7 @@ const handleLogin = async () => {
   color: #18A058;
   text-decoration: none;
   font-weight: 500;
+  cursor: pointer;
 }
 
 .login-tips a:hover {
@@ -470,12 +481,17 @@ const handleLogin = async () => {
 
 /* 响应式设计 */
 @media (max-width: 968px) {
-  .login-container {
+  .login-wrapper {
     flex-direction: column;
+    max-width: 500px;
   }
   
   .login-left {
     min-height: 300px;
+    padding: 40px 20px;
+  }
+  
+  .login-right {
     padding: 40px 20px;
   }
   

@@ -15,6 +15,7 @@ ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
+    'simpleui',  # SimpleUI 必须放在 django.contrib.admin 之前
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -105,3 +106,26 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CORS 配置
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+# SimpleUI 配置
+SIMPLEUI_CONFIG = {
+    'system_keep': False,  # 不显示默认的 Django 系统配置
+    'menu_display': ['汽车管理', '用户管理', '数据分析'],  # 菜单显示
+    'dynamic': True,  # 动态菜单
+    'menus': [
+        {
+            'name': '汽车管理',
+            'icon': 'fas fa-car',
+            'models': [
+                {'name': '品牌管理', 'url': 'cars/brand/', 'icon': 'fa fa-copyright'},
+                {'name': '车系管理', 'url': 'cars/carseries/', 'icon': 'fa fa-list'},
+                {'name': '销量数据', 'url': 'cars/carsale/', 'icon': 'fa fa-chart-line'},
+                {'name': '质量问题', 'url': 'cars/carissue/', 'icon': 'fa fa-exclamation-triangle'},
+            ]
+        },
+    ]
+}
+
+SIMPLEUI_HOME_INFO = False  # 不显示首页信息
+SIMPLEUI_ANALYSIS = False  # 不显示分析页面
+SIMPLEUI_LOGO = 'https://avatars.githubusercontent.com/u/13655483'  # Logo

@@ -174,8 +174,21 @@ const handleLogout = async () => {
 // 加载统计数据
 const loadStatistics = async () => {
   try {
-    const data = await getStatistics()
-    statisticsData.value = data
+    const data = await getStatistics() as any
+    console.log('统计数据响应:', data)
+    
+    // Django后端返回: {code: 200, data: {totalCars: xx, totalBrands: xx, ...}}
+    if (data && data.data) {
+      statisticsData.value = data.data
+    } else {
+      // 如果格式不对，使用模拟数据
+      statisticsData.value = {
+        totalCars: 1280,
+        totalBrands: 45,
+        totalUsers: 8960,
+        todayVisits: 342
+      }
+    }
   } catch (error) {
     console.error('加载统计数据失败:', error)
     // 使用模拟数据

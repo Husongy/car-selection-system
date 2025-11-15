@@ -1,14 +1,16 @@
 /**
  * 用户认证状态管理
+ * 兼容 FastAPI 和 Django 两种后端
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { 
-  login as loginApi, 
+  login as fastapiLoginApi, 
   getUserInfo as getUserInfoApi, 
   logout as logoutApi, 
   type UserInfo 
 } from '@/api/auth'
+import { login as djangoLoginApi, register as djangoRegisterApi } from '@/api/user'
 
 export const useUserStore = defineStore('user', () => {
   // 状态
@@ -68,13 +70,13 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
-   * 用户登录
+   * 用户登录 (FastAPI)
    */
   const login = async (username: string, password: string) => {
     try {
       loading.value = true
       
-      const response = await loginApi({ username, password }) as any
+      const response = await fastapiLoginApi({ username, password }) as any
       
       // response 已经是 TokenResponse 类型（由响应拦截器处理）
       if (response && response.access_token) {
@@ -110,6 +112,78 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
+   * Django 用户登录
+   */
+  const loginDjango = async (username: string, password: string) => {
+    try {
+      loading.value = true
+      
+      const response = await djangoLoginApi({ username, password }) as any
+      console.log('Django登录响应:', response)
+      
+      // Django返回: {code: 200, message: 'xx', data: {token: 'xx', id: xx, username: 'xx', email: 'xx'}}
+      if (response && response.data && response.data.token) {
+        // 保存token和用户信息
+        setToken(response.data.token)
+        setUserInfo({
+          id: response.data.id,
+          username: response.data.username,
+          email: response.data.email,
+          is_superuser: false,
+          is_active: true
+        })
+        
+        return { success: true, message: '登录成功' }
+      } else {
+        throw new Error('登录失败')
+      }
+    } catch (error: any) {
+      clearUserInfo()
+      
+      let errorMessage = '登录失败'
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      console.error('登录错误:', error)
+      return { success: false, message: errorMessage }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Django 用户注册
+   */
+  const registerDjango = async (username: string, password: string, email?: string) => {
+    try {
+      loading.value = true
+      
+      const response = await djangoRegisterApi({ username, password, email }) as any
+      
+      if (response) {
+        return { success: true, message: '注册成功，请登录' }
+      } else {
+        throw new Error('注册失败')
+      }
+    } catch (error: any) {
+      let errorMessage = '注册失败'
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      console.error('注册错误:', error)
+      return { success: false, message: errorMessage }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
    * 获取用户信息
    */
   const fetchUserInfo = async () => {
@@ -135,7 +209,9 @@ export const useUserStore = defineStore('user', () => {
    */
   const logout = async () => {
     try {
-      await logoutApi()
+      // Django后端不需要调用logout API，直接清除本地数据即可
+      // FastAPI后端可以调用logout API（可选）
+      // await logoutApi()
     } catch (error) {
       console.error('退出登录API调用失败:', error)
     } finally {
@@ -159,6 +235,8 @@ export const useUserStore = defineStore('user', () => {
     clearUserInfo,
     init,
     login,
+    loginDjango,
+    registerDjango,
     fetchUserInfo,
     logout
   }

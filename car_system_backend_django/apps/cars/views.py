@@ -8,6 +8,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Sum, Count
+from django.contrib.auth.models import User
 from pyecharts.charts import Bar, Pie
 from pyecharts import options as opts
 from .models import Brand, CarSeries, CarSale, CarIssue
@@ -349,3 +350,226 @@ def brand_list(request):
         'total': len(brand_list),
         'records': brand_list
     })
+
+
+# ==================== RESTful API (GET请求) ====================
+
+@csrf_exempt
+def get_cars_list(request):
+    """
+    获取车型列表 (GET请求)
+    支持多条件筛选和分页
+    
+    查询参数:
+        - page: 页码
+        - page_size: 每页数量
+        - brand_ids: 品牌ID列表(逗号分隔)
+        - price_min: 最低价格
+        - price_max: 最高价格
+        - energy_types: 能源类型(逗号分隔)
+        - seats: 座位数(逗号分隔)
+        - levels: 车型级别(逗号分隔)
+        - sort_by: 排序方式
+    """
+    try:
+        # 获取查询参数
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 12))
+        brand_ids = request.GET.get('brand_ids', '')
+        price_min = request.GET.get('price_min')
+        price_max = request.GET.get('price_max')
+        energy_types = request.GET.get('energy_types', '')
+        seats = request.GET.get('seats', '')
+        levels = request.GET.get('levels', '')
+        sort_by = request.GET.get('sort_by', 'price_asc')
+        
+        # 构建查询
+        queryset = CarSeries.objects.select_related('brand').all()
+        
+        # 品牌筛选
+        if brand_ids:
+            brand_id_list = [int(x) for x in brand_ids.split(',') if x]
+            queryset = queryset.filter(brand_id__in=brand_id_list)
+        
+        # 价格筛选
+        if price_min:
+            queryset = queryset.filter(price_min__gte=float(price_min))
+        if price_max:
+            queryset = queryset.filter(price_max__lte=float(price_max))
+        
+        # 能源类型筛选
+        if energy_types:
+            energy_type_list = [x.strip() for x in energy_types.split(',') if x]
+            queryset = queryset.filter(fuel_type__in=energy_type_list)
+        
+        # 车身类型筛选(暂时用body_type字段)
+        if levels:
+            level_list = [x.strip() for x in levels.split(',') if x]
+            queryset = queryset.filter(body_type__in=level_list)
+        
+        # 排序
+        if sort_by == 'price_asc':
+            queryset = queryset.order_by('price_min')
+        elif sort_by == 'price_desc':
+            queryset = queryset.order_by('-price_max')
+        elif sort_by == 'name_asc':
+            queryset = queryset.order_by('name')
+        elif sort_by == 'name_desc':
+            queryset = queryset.order_by('-name')
+        else:
+            queryset = queryset.order_by('-created_at')
+        
+        # 总数
+        total = queryset.count()
+        
+        # 分页
+        start = (page - 1) * page_size
+        end = start + page_size
+        cars = queryset[start:end]
+        
+        # 格式化返回数据
+        data = []
+        for car in cars:
+            data.append({
+                'id': car.id,
+                'name': car.name,
+                'series_id': car.id,
+                'series_name': car.name,
+                'brand_id': car.brand.id,
+                'brand_name': car.brand.name,
+                'price': float(car.price_min) if car.price_min else None,
+                'image': car.image,
+                'energy_type': car.get_fuel_type_display(),
+                'level': car.body_type,
+                'description': car.description,
+            })
+        
+        return JsonResponse({
+            'code': 200,
+            'message': '成功',
+            'data': data,
+            'total': total,
+            'page': page,
+            'page_size': page_size
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'code': 500,
+            'message': f'服务器错误: {str(e)}'
+        }, status=500)
+
+
+@csrf_exempt
+def get_filter_options(request):
+    """
+    获取筛选条件的可选项
+    返回能源类型、座位数、车型级别等选项
+    """
+    try:
+        # 能源类型(从CHOICES中获取)
+        energy_types = [choice[1] for choice in CarSeries.FUEL_TYPE_CHOICES]
+        
+        # 车身类型(从现有数据中获取)
+        body_types = CarSeries.objects.exclude(
+            body_type__isnull=True
+        ).exclude(
+            body_type=''
+        ).values_list('body_type', flat=True).distinct()
+        
+        return JsonResponse({
+            'code': 200,
+            'message': '成功',
+            'data': {
+                'energy_types': list(energy_types),
+                'seats': [4, 5, 6, 7],  # 常见座位数
+                'levels': list(body_types)  # 车型级别使用车身类型
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'code': 500,
+            'message': f'服务器错误: {str(e)}'
+        }, status=500)
+
+
+@csrf_exempt
+def get_brands_list(request):
+    """
+    获取品牌列表 (GET请求)
+    支持分页
+    """
+    try:
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('pageSize', 100))
+        
+        # 查询所有品牌
+        brands = Brand.objects.all().order_by('name')
+        
+        # 总数
+        total = brands.count()
+        
+        # 分页
+        start = (page - 1) * page_size
+        end = start + page_size
+        brands_page = brands[start:end]
+        
+        # 格式化数据
+        data = []
+        for brand in brands_page:
+            data.append({
+                'id': brand.id,
+                'name': brand.name,
+                'logo': brand.logo,
+                'country': brand.country
+            })
+        
+        return JsonResponse({
+            'code': 200,
+            'message': '成功',
+            'data': data,
+            'total': total
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'code': 500,
+            'message': f'服务器错误: {str(e)}'
+        }, status=500)
+
+
+@csrf_exempt
+def get_statistics(request):
+    """
+    获取系统统计数据 (GET请求)
+    """
+    try:
+        # 统计车辆总数（车系数量）
+        total_cars = CarSeries.objects.count()
+        
+        # 统计品牌数量
+        total_brands = Brand.objects.count()
+        
+        # 统计用户数量
+        total_users = User.objects.count()
+        
+        # 今日访问（模拟数据，后续可以通过访问日志统计）
+        today_visits = 342
+        
+        return JsonResponse({
+            'code': 200,
+            'message': '成功',
+            'data': {
+                'totalCars': total_cars,
+                'totalBrands': total_brands,
+                'totalUsers': total_users,
+                'todayVisits': today_visits
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'code': 500,
+            'message': f'服务器错误: {str(e)}'
+        }, status=500)

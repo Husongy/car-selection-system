@@ -1,5 +1,10 @@
+"""
+用户认证路由
+"""
 from django.urls import path
+from . import views
 
 urlpatterns = [
-    # 用户相关API后续添加
+    path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
 ]

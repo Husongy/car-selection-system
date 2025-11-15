@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -19,11 +20,20 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/Register.vue'),
+    meta: {
+      title: '用户注册'
+    }
+  },
+  {
     path: '/select-car',
     name: 'SelectCar',
     component: () => import('@/views/SelectCar.vue'),
     meta: {
-      title: '智能选车'
+      title: '智能选车',
+      requiresAuth: true  // 需要登录
     }
   },
   {
@@ -80,6 +90,21 @@ router.beforeEach((to, from, next) => {
   if (to.meta.title) {
     document.title = `${to.meta.title} - 新能源汽车智能选车系统`
   }
+  
+  // 检查是否需要认证
+  if (to.meta.requiresAuth) {
+    const userStore = useUserStore()
+    
+    if (!userStore.isLoggedIn) {
+      // 未登录，跳转到登录页
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }  // 保存目标路由
+      })
+      return
+    }
+  }
+  
   next()
 })
 

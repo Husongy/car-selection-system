@@ -37,8 +37,14 @@ service.interceptors.response.use(
       return Promise.reject(new Error(res.message || 'Error'))
     }
     
-    // 返回 data 字段，而不是整个 res
-    return res.data
+    // Django后端返回格式: {code: 200, message: 'xx', data: [...], total: xx}
+    // 如果有code字段，说昏Django后端，返回完整的res对象
+    if (res.code !== undefined) {
+      return res
+    }
+    
+    // 其他情况直接返回
+    return res
   },
   (error) => {
     console.error('响应错误:', error.message)

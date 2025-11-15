@@ -59,22 +59,22 @@ export function getCarList(params: CarListParams): Promise<CarListResponse> {
 }
 
 /**
- * 条件查询车型列表
+ * 条件查询车型列表 - Django后端
  */
 export function queryCars(params: QueryCarsParams): Promise<any> {
   return request({
-    url: '/api/v1/cars',
+    url: '/api/cars/v1/cars',
     method: 'get',
     params
   })
 }
 
 /**
- * 获取筛选条件选项
+ * 获取筛选条件选项 - Django后端
  */
 export function getFilterOptions(): Promise<any> {
   return request({
-    url: '/api/v1/cars/filters',
+    url: '/api/cars/v1/cars/filters',
     method: 'get'
   })
 }
