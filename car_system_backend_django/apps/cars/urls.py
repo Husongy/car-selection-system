@@ -22,4 +22,8 @@ urlpatterns = [
     # GET API (RESTful API)
     path('v1/cars', views.get_cars_list, name='get_cars_list'),
     path('v1/cars/filters', views.get_filter_options, name='get_filter_options'),
+    
+    # 车系详情API
+    path('detail-full/', views.car_detail_full, name='car_detail_full'),
+    path('list-simple/', views.car_list_simple, name='car_list_simple'),
 ]

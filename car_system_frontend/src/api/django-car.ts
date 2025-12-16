@@ -173,3 +173,98 @@ export function getPriceRangeDistribution() {
     {}
   )
 }
+
+// 车系详情综合数据类型
+export interface CarDetailData {
+  basic_info: {
+    id: number
+    name: string
+    brand_id: number
+    brand_name: string
+    brand_logo: string | null
+    fuel_type: string
+    fuel_type_display: string
+    body_type: string | null
+    price_min: number | null
+    price_max: number | null
+    endurance_min: number | null
+    endurance_max: number | null
+    image: string | null
+    description: string | null
+  }
+  params: {
+    acceleration: string
+    max_speed: number
+    curb_weight: string
+    drive_type: string
+    seat_count: number
+    wheelbase: number
+  }
+  scores: {
+    comfort: number
+    appearance: number
+    power: number
+    interior: number
+    config: number
+    space: number
+    total: number
+  }
+  versions: Array<{
+    id: number
+    name: string
+    year: number
+    price: number
+    endurance: number | null
+    is_default: boolean
+  }>
+  colors: Array<{
+    id: number
+    name: string
+    color_code: string
+    image: string | null
+    is_default: boolean
+  }>
+  issue_tags: Array<{
+    name: string
+    category: string
+    count: number
+  }>
+  word_cloud: Array<{
+    name: string
+    value: number
+  }>
+  sales_trend: Array<{
+    month: string
+    sales: number
+  }>
+  issue_trend: Array<{
+    month: string
+    quality: number
+    service: number
+    other: number
+  }>
+  rankings: {
+    sales_rank_year: number
+    issue_rank_year: number
+  }
+}
+
+/**
+ * 获取车系详情综合数据
+ * @param carSeriesId 车系ID（可选，不传则返回默认车系）
+ */
+export function getCarDetailFull(carSeriesId?: number) {
+  return instance.post<any, { code: number; message: string; data: CarDetailData }>(
+    '/api/cars/detail-full/',
+    carSeriesId ? { car_series_id: carSeriesId } : {}
+  )
+}
+
+/**
+ * 获取车系简单列表（用于下拉框）
+ */
+export function getCarListSimple() {
+  return instance.get<any, { code: number; message: string; data: Array<{ id: number; name: string; brand_name: string; series_name: string; image: string | null }> }>(
+    '/api/cars/list-simple/'
+  )
+}

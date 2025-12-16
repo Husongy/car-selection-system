@@ -11,7 +11,7 @@ from django.db.models import Q, Sum, Count
 from django.contrib.auth.models import User
 from pyecharts.charts import Bar, Pie
 from pyecharts import options as opts
-from .models import Brand, CarSeries, CarSale, CarIssue
+from .models import Brand, CarSeries, CarSale, CarIssue, CarVersion, CarColor
 
 
 # ==================== 辅助函数 ====================
@@ -876,3 +876,182 @@ def get_statistics(request):
             'code': 500,
             'message': f'服务器错误: {str(e)}'
         }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def car_detail_full(request):
+    """
+    车系详情综合API - 包含所有详情信息
+    包括：基本信息、评分、版本、颜色、投诉统计、销量趋势
+    """
+    try:
+        # 获取参数
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)
+            except:
+                data = {}
+            car_series_id = data.get('car_series_id')
+        else:
+            car_series_id = request.GET.get('car_series_id') or request.GET.get('id')
+        
+        if not car_series_id:
+            # 如果没有指定，返回第一个车系作为默认
+            car_series = CarSeries.objects.select_related('brand').first()
+            if not car_series:
+                return JsonResponse({'code': 404, 'message': '没有车系数据'}, status=404)
+        else:
+            try:
+                car_series = CarSeries.objects.select_related('brand').get(id=car_series_id)
+            except CarSeries.DoesNotExist:
+                return JsonResponse({'code': 404, 'message': '车系不存在'}, status=404)
+        
+        # 基本信息
+        basic_info = {
+            'id': car_series.id,
+            'name': car_series.name,
+            'brand_id': car_series.brand.id,
+            'brand_name': car_series.brand.name,
+            'brand_logo': car_series.brand.logo,
+            'fuel_type': car_series.fuel_type,
+            'fuel_type_display': car_series.get_fuel_type_display(),
+            'body_type': car_series.body_type,
+            'price_min': float(car_series.price_min) if car_series.price_min else None,
+            'price_max': float(car_series.price_max) if car_series.price_max else None,
+            'endurance_min': car_series.endurance_min,
+            'endurance_max': car_series.endurance_max,
+            'image': car_series.image,
+            'description': car_series.description,
+        }
+        
+        # 车辆参数
+        params = {
+            'acceleration': getattr(car_series, 'acceleration', None) or '3.7-5.9',
+            'max_speed': getattr(car_series, 'max_speed', None) or 250,
+            'curb_weight': getattr(car_series, 'curb_weight', None) or '1911-1998',
+            'drive_type': getattr(car_series, 'drive_type', None) or '后驱/四驱',
+            'seat_count': getattr(car_series, 'seat_count', 5),
+            'wheelbase': getattr(car_series, 'wheelbase', None) or 2890,
+        }
+        
+        # 评分数据
+        scores = {
+            'comfort': float(getattr(car_series, 'score_comfort', 4.3)),
+            'appearance': float(getattr(car_series, 'score_appearance', 4.1)),
+            'power': float(getattr(car_series, 'score_power', 4.4)),
+            'interior': float(getattr(car_series, 'score_interior', 4.2)),
+            'config': float(getattr(car_series, 'score_config', 3.5)),
+            'space': float(getattr(car_series, 'score_space', 4.4)),
+        }
+        scores['total'] = round(sum(scores.values()) / len(scores), 2)
+        
+        # 车型版本 - 模拟数据
+        versions = [
+            {'id': 1, 'name': '后轮驱动版', 'year': 2023, 'price': 26.39, 'endurance': 545, 'is_default': False},
+            {'id': 2, 'name': '长续航全轮驱动版', 'year': 2022, 'price': 31.99, 'endurance': 660, 'is_default': False},
+            {'id': 3, 'name': '长续航全轮驱动版', 'year': 2021, 'price': 34.99, 'endurance': 640, 'is_default': False},
+            {'id': 4, 'name': '长续航全轮驱动版 3D3/3D7', 'year': 2021, 'price': 33.99, 'endurance': 640, 'is_default': True},
+        ]
+        
+        # 车身颜色 - 模拟数据
+        colors = [
+            {'id': 1, 'name': '冷光银', 'color_code': '#8B8B8B', 'image': None, 'is_default': True},
+            {'id': 2, 'name': '深海蓝', 'color_code': '#1E3A5F', 'image': None, 'is_default': False},
+            {'id': 3, 'name': '纯黑色', 'color_code': '#1C1C1C', 'image': None, 'is_default': False},
+            {'id': 4, 'name': '珠光白', 'color_code': '#F5F5F5', 'image': None, 'is_default': False},
+            {'id': 5, 'name': '中国红', 'color_code': '#C41E3A', 'image': None, 'is_default': False},
+        ]
+        
+        # 投诉统计
+        issues = CarIssue.objects.filter(car_series=car_series)
+        issue_stats = issues.values('issue_type', 'category').annotate(
+            count=Sum('report_count')
+        ).order_by('-count')[:20]
+        
+        issue_tags = []
+        for item in issue_stats:
+            issue_tags.append({
+                'name': item['issue_type'],
+                'category': item['category'],
+                'count': item['count'] or 0,
+            })
+        
+        # 如果没有投诉数据，使用模拟数据
+        if not issue_tags:
+            issue_tags = [
+                {'name': '转向系统', 'category': 'quality', 'count': 45},
+                {'name': '售后收费', 'category': 'service', 'count': 17},
+                {'name': '承诺不兑现', 'category': 'service', 'count': 11},
+                {'name': '前后桥及悬挂系统', 'category': 'quality', 'count': 10},
+                {'name': '打方向沉重', 'category': 'quality', 'count': 10},
+                {'name': '车身附件及电器', 'category': 'quality', 'count': 7},
+                {'name': '异响', 'category': 'quality', 'count': 5},
+                {'name': '发动机/电动机', 'category': 'quality', 'count': 4},
+                {'name': '无法启动', 'category': 'quality', 'count': 4},
+                {'name': '操作不便', 'category': 'other', 'count': 4},
+            ]
+        
+        # 质量问题词云数据
+        word_cloud = [{'name': tag['name'], 'value': tag['count']} for tag in issue_tags[:15]]
+        
+        # 销量趋势
+        sales_trend = []
+        sales_data = CarSale.objects.filter(car_series=car_series).order_by('month')[:12]
+        for sale in sales_data:
+            sales_trend.append({'month': sale.month, 'sales': sale.sales})
+        
+        # 如果没有销量数据，使用模拟数据
+        if not sales_trend:
+            import random
+            months = ['2024-01', '2024-02', '2024-03', '2024-04', '2024-05', '2024-06',
+                      '2024-07', '2024-08', '2024-09', '2024-10', '2024-11', '2024-12']
+            sales_trend = [{'month': m, 'sales': random.randint(8000, 25000)} for m in months]
+        
+        # 投诉趋势 - 模拟数据
+        import random
+        months = ['2022-05', '2022-06', '2022-07', '2022-08', '2022-09', '2022-10',
+                  '2022-11', '2022-12', '2023-01', '2023-02', '2023-03', '2023-04']
+        issue_trend = [{
+            'month': m,
+            'quality': random.randint(10, 60),
+            'service': random.randint(5, 30),
+            'other': random.randint(2, 15),
+        } for m in months]
+        
+        # 排名信息（模拟）
+        rankings = {'sales_rank_year': 1, 'issue_rank_year': 18}
+        
+        return JsonResponse({
+            'code': 200,
+            'message': '成功',
+            'data': {
+                'basic_info': basic_info,
+                'params': params,
+                'scores': scores,
+                'versions': versions,
+                'colors': colors,
+                'issue_tags': issue_tags,
+                'word_cloud': word_cloud,
+                'sales_trend': sales_trend,
+                'issue_trend': issue_trend,
+                'rankings': rankings,
+            }
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'code': 500, 'message': f'服务器错误: {str(e)}'}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def car_list_simple(request):
+    """获取车系简单列表（用于下拉框选择）"""
+    try:
+        cars = CarSeries.objects.select_related('brand').all()[:50]
+        result = [{'id': c.id, 'name': f"{c.brand.name} {c.name}", 'brand_name': c.brand.name, 'series_name': c.name, 'image': c.image} for c in cars]
+        return JsonResponse({'code': 200, 'message': '成功', 'data': result})
+    except Exception as e:
+        return JsonResponse({'code': 500, 'message': f'服务器错误: {str(e)}'}, status=500)
