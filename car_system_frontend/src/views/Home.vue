@@ -236,8 +236,13 @@ const currentColorName = computed(() => {
 // 当前车辆图片
 const currentCarImage = computed(() => {
   if (!carData.value) return defaultCarImage
+  // 优先使用颜色图片，其次使用车系图片，然后使用品牌占位图，最后使用默认图
   const color = carData.value.colors.find(c => c.id === selectedColorId.value)
-  return color?.image || carData.value.basic_info.image || defaultCarImage
+  if (color?.image) return color.image
+  if (carData.value.basic_info.image) return carData.value.basic_info.image
+  // 使用品牌占位图
+  const brandName = carData.value.basic_info.brand_name
+  return brandImages[brandName] || defaultCarImage
 })
 
 // 格式化价格
