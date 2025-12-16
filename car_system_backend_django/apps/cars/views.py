@@ -178,6 +178,147 @@ def car_issue_rank(request):
 
 @csrf_exempt
 @require_http_methods(["POST"])
+def bad_review_rank(request):
+    """
+    差评榜单 - 根据时间范围和问题类型统计投诉数据
+    POST 请求参数:
+        - time_range: 时间范围 ('1m' 近1个月, '6m' 近半年, '1y' 近一年, 或具体月份 '2024-01')
+        - category: 问题分类 ('quality' 质量问题, 'service' 服务问题, 'other' 其他问题, 空表示全部)
+        - page: 页码 (默认 1)
+        - pagesize: 每页数量 (默认 20)
+    返回格式: {"total": 总数, "records": [数据列表], "start_date": 开始日期, "end_date": 结束日期}
+    """
+    try:
+        try:
+            data = json.loads(request.body)
+        except:
+            data = {}
+        
+        time_range = data.get('time_range', '1y')
+        category = data.get('category', '')  # 'quality', 'service', 'other' 或空
+        page = int(data.get('page', 1))
+        pagesize = int(data.get('pagesize', 20))
+        
+        # 计算时间范围
+        now = datetime.now()
+        end_date = now
+        
+        if time_range == '1m':  # 近1个月
+            start_date = now - timedelta(days=30)
+        elif time_range == '6m':  # 近半年
+            start_date = now - timedelta(days=180)
+        elif time_range == '1y':  # 近一年
+            start_date = now - timedelta(days=365)
+        else:  # 具体月份，如 '2024-01'
+            try:
+                # 解析月份格式
+                start_date = datetime.strptime(time_range + '-01', '%Y-%m-%d')
+                # 计算月末
+                if start_date.month == 12:
+                    end_date = start_date.replace(year=start_date.year + 1, month=1, day=1) - timedelta(days=1)
+                else:
+                    end_date = start_date.replace(month=start_date.month + 1, day=1) - timedelta(days=1)
+                end_date = end_date.replace(hour=23, minute=59, second=59)
+            except:
+                # 默认近一年
+                start_date = now - timedelta(days=365)
+                end_date = now
+        
+        # 查询投诉数据
+        queryset = CarIssue.objects.select_related(
+            'car_series', 
+            'car_series__brand'
+        ).filter(
+            created_at__gte=start_date,
+            created_at__lte=end_date
+        )
+        
+        # 按问题分类筛选 - 检查category字段是否存在
+        if category:
+            # 先检查模型是否有category字段
+            if hasattr(CarIssue, 'category'):
+                queryset = queryset.filter(category=category)
+        
+        # 按车系聚合统计
+        issue_stats = queryset.values(
+            'car_series__id',
+            'car_series__name',
+            'car_series__brand__name',
+            'car_series__image'
+        ).annotate(
+            issue_count=Count('id'),  # 问题种类数
+            total_reports=Sum('report_count')  # 总投诉次数
+        )
+        
+        # 如果caregory字段存在，添加分类统计
+        if hasattr(CarIssue, 'category'):
+            issue_stats = issue_stats.annotate(
+                quality_count=Count('id', filter=Q(category='quality')),  # 质量问题数
+                service_count=Count('id', filter=Q(category='service')),  # 服务问题数
+                other_count=Count('id', filter=Q(category='other'))  # 其他问题数
+            )
+        
+        issue_stats = issue_stats.order_by('-total_reports')  # 按总投诉次数排序
+        
+        # 分页
+        total = issue_stats.count()
+        start = (page - 1) * pagesize
+        end = start + pagesize
+        records = list(issue_stats[start:end])
+        
+        # 格式化返回数据
+        formatted_records = []
+        for idx, item in enumerate(records, start=start + 1):
+            record = {
+                'rank': idx,
+                'car_series_id': item['car_series__id'],
+                'car_series_name': item['car_series__name'],
+                'brand_name': item['car_series__brand__name'],
+                'series_image': item['car_series__image'] or '',
+                'issue_count': item['issue_count'],
+                'total_reports': item['total_reports'] or 0,
+            }
+            
+            # 如果category字段存在，添加分类统计
+            if hasattr(CarIssue, 'category'):
+                record['quality_count'] = item.get('quality_count', 0)
+                record['service_count'] = item.get('service_count', 0)
+                record['other_count'] = item.get('other_count', 0)
+            else:
+                # 如果没有category字段，返回0
+                record['quality_count'] = 0
+                record['service_count'] = 0
+                record['other_count'] = 0
+            
+            formatted_records.append(record)
+        
+        return JsonResponse({
+            'total': total,
+            'records': formatted_records,
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+        })
+    
+    except Exception as e:
+        # 返回错误信息
+        import traceback
+        error_msg = str(e)
+        traceback_msg = traceback.format_exc()
+        print(f"Error in bad_review_rank: {error_msg}")
+        print(traceback_msg)
+        
+        return JsonResponse({
+            'error': '服务器错误',
+            'message': error_msg,
+            'total': 0,
+            'records': [],
+            'start_date': datetime.now().strftime('%Y-%m-%d'),
+            'end_date': datetime.now().strftime('%Y-%m-%d'),
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
 def get_detail(request):
     """
     获取车系详情
@@ -260,6 +401,168 @@ def car_series_analysis(request):
     
     # 返回图表配置 JSON
     return HttpResponse(bar.dump_options(), content_type="application/json")
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def price_discount_ranking(request):
+    """
+    车系降价排行榜 - 返回JSON数据供前端渲染横向条形图
+    按 (price_max - price_min) 计算降价幅度，返回TOP数据
+    """
+    try:
+        # 获取limit参数
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)
+            except:
+                data = {}
+            limit = int(data.get('limit', 15))
+        else:
+            limit = int(request.GET.get('limit', 15))
+        
+        # 查询所有有价格区间的车系，计算降价幅度
+        car_series = CarSeries.objects.select_related('brand').filter(
+            price_min__isnull=False,
+            price_max__isnull=False
+        ).exclude(
+            price_min=0,
+            price_max=0
+        )
+        
+        # 计算降价幅度并排序
+        discount_list = []
+        for car in car_series:
+            discount = float(car.price_max) - float(car.price_min)
+            if discount > 0:
+                discount_list.append({
+                    'series_name': f"{car.brand.name} {car.name}",
+                    'brand_name': car.brand.name,
+                    'car_name': car.name,
+                    'price_min': float(car.price_min),
+                    'price_max': float(car.price_max),
+                    'discount': round(discount, 2)
+                })
+        
+        # 按降价幅度排序，取TOP
+        discount_list.sort(key=lambda x: x['discount'], reverse=True)
+        result = discount_list[:limit]
+        
+        return JsonResponse({
+            'code': 200,
+            'message': '成功',
+            'data': result
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'code': 500,
+            'message': f'服务器错误: {str(e)}',
+            'data': []
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def brand_count_distribution(request):
+    """
+    汽车品牌车系数量TOP分布 - 返回JSON数据供前端渲染环形图
+    统计每个品牌下的车系数量
+    """
+    try:
+        # 获取limit参数
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)
+            except:
+                data = {}
+            limit = int(data.get('limit', 10))
+        else:
+            limit = int(request.GET.get('limit', 10))
+        
+        # 按品牌统计车系数量
+        brand_stats = CarSeries.objects.values(
+            'brand__id',
+            'brand__name'
+        ).annotate(
+            count=Count('id')
+        ).order_by('-count')[:limit]
+        
+        result = []
+        for item in brand_stats:
+            result.append({
+                'brand_id': item['brand__id'],
+                'brand_name': item['brand__name'],
+                'count': item['count']
+            })
+        
+        return JsonResponse({
+            'code': 200,
+            'message': '成功',
+            'data': result
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'code': 500,
+            'message': f'服务器错误: {str(e)}',
+            'data': []
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def price_range_distribution(request):
+    """
+    价格范围数量分布 - 返回JSON数据供前端渲染柱状图
+    按价格区间统计车系数量
+    """
+    try:
+        # 定义价格区间
+        price_ranges = [
+            {'name': '10万以下', 'min': 0, 'max': 10},
+            {'name': '10-15万', 'min': 10, 'max': 15},
+            {'name': '15-20万', 'min': 15, 'max': 20},
+            {'name': '20-25万', 'min': 20, 'max': 25},
+            {'name': '25-30万', 'min': 25, 'max': 30},
+            {'name': '30-40万', 'min': 30, 'max': 40},
+            {'name': '40-50万', 'min': 40, 'max': 50},
+            {'name': '50万以上', 'min': 50, 'max': 9999},
+        ]
+        
+        result = []
+        for range_item in price_ranges:
+            if range_item['max'] == 9999:
+                # 50万以上
+                count = CarSeries.objects.filter(
+                    price_min__gte=range_item['min']
+                ).count()
+            else:
+                # 其他区间
+                count = CarSeries.objects.filter(
+                    price_min__gte=range_item['min'],
+                    price_min__lt=range_item['max']
+                ).count()
+            
+            result.append({
+                'range': range_item['name'],
+                'count': count,
+                'min': range_item['min'],
+                'max': range_item['max']
+            })
+        
+        return JsonResponse({
+            'code': 200,
+            'message': '成功',
+            'data': result
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'code': 500,
+            'message': f'服务器错误: {str(e)}',
+            'data': []
+        }, status=500)
 
 
 @csrf_exempt

@@ -252,7 +252,7 @@ const sortBy = ref('price_asc')
 
 // ========== 分页状态 ==========
 const currentPage = ref(1)
-const pageSize = ref(12)
+const pageSize = ref(24)  // 增加到24，显示更多车型
 
 // ========== 筛选选项 ==========
 const brandOptions = ref<Array<{ label: string; value: number }>>([])

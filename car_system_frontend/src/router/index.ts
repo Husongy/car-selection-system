@@ -62,6 +62,14 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/django/bad-review-rank',
+    name: 'BadReviewRank',
+    component: () => import('@/views/BadReviewRank.vue'),
+    meta: {
+      title: '差评榜单'
+    }
+  },
+  {
     path: '/django/analysis',
     name: 'DjangoAnalysis',
     component: () => import('@/views/DjangoAnalysis.vue'),

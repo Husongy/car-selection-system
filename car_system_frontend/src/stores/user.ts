@@ -7,7 +7,6 @@ import { ref, computed } from 'vue'
 import { 
   login as fastapiLoginApi, 
   getUserInfo as getUserInfoApi, 
-  logout as logoutApi, 
   type UserInfo 
 } from '@/api/auth'
 import { login as djangoLoginApi, register as djangoRegisterApi } from '@/api/user'

@@ -41,11 +41,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, type Component } from 'vue'
+import { h, computed, type Component } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { NIcon, type GlobalThemeOverrides } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
-import { HomeOutline, CarSportOutline, BarChartOutline, TrophyOutline, FilterOutline } from '@vicons/ionicons5'
+import { HomeOutline, BarChartOutline, TrophyOutline, FilterOutline, WarningOutline } from '@vicons/ionicons5'
 
 const route = useRoute()
 
@@ -104,6 +104,18 @@ const menuOptions: MenuOption[] = [
       ),
     key: '/django/sales-rank',
     icon: renderIcon(TrophyOutline)
+  },
+  {
+    label: () =>
+      h(
+        RouterLink,
+        {
+          to: '/django/bad-review-rank'
+        },
+        { default: () => '差评榜单' }
+      ),
+    key: '/django/bad-review-rank',
+    icon: renderIcon(WarningOutline)
   },
   {
     label: () =>

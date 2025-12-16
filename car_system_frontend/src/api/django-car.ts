@@ -84,3 +84,92 @@ export function filterCars(data: {
 export function getBrandList() {
   return instance.post('/api/cars/brands/', {})
 }
+
+/**
+ * 差评榜单 - 根据时间范围和问题类型统计投诉数据
+ * @param data {
+ *   time_range: '1m'|'6m'|'1y'|具体月份(2024-01),
+ *   category: 'quality'|'service'|'other'|'',
+ *   page: number,
+ *   pagesize: number
+ * }
+ */
+export function getBadReviewRank(data: {
+  time_range?: string
+  category?: string
+  page?: number
+  pagesize?: number
+}) {
+  return instance.post('/api/cars/bad-review-rank/', data)
+}
+
+// 导出类型定义
+export interface BadReviewRankItem {
+  rank: number
+  car_series_id: number
+  car_series_name: string
+  brand_name: string
+  series_image: string
+  issue_count: number
+  total_reports: number
+  quality_count: number
+  service_count: number
+  other_count: number
+}
+
+// 降价排行项
+export interface PriceDiscountItem {
+  series_name: string
+  brand_name: string
+  car_name: string
+  price_min: number
+  price_max: number
+  discount: number
+}
+
+// 品牌车系数量项
+export interface BrandCountItem {
+  brand_id: number
+  brand_name: string
+  count: number
+}
+
+// 价格区间数量项
+export interface PriceRangeItem {
+  range: string
+  count: number
+  min: number
+  max: number
+}
+
+/**
+ * 获取车系降价排行榜
+ * @param limit 返回数量限制
+ */
+export function getPriceDiscountRanking(limit: number = 15) {
+  return instance.post<any, { code: number; message: string; data: PriceDiscountItem[] }>(
+    '/api/cars/analysis/price-discount/',
+    { limit }
+  )
+}
+
+/**
+ * 获取品牌车系数量分布
+ * @param limit 返回数量限制
+ */
+export function getBrandCountDistribution(limit: number = 10) {
+  return instance.post<any, { code: number; message: string; data: BrandCountItem[] }>(
+    '/api/cars/analysis/brand-count/',
+    { limit }
+  )
+}
+
+/**
+ * 获取价格区间分布
+ */
+export function getPriceRangeDistribution() {
+  return instance.post<any, { code: number; message: string; data: PriceRangeItem[] }>(
+    '/api/cars/analysis/price-range/',
+    {}
+  )
+}
