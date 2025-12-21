@@ -946,22 +946,42 @@ def car_detail_full(request):
         }
         scores['total'] = round(sum(scores.values()) / len(scores), 2)
         
-        # 车型版本 - 模拟数据
-        versions = [
-            {'id': 1, 'name': '后轮驱动版', 'year': 2023, 'price': 26.39, 'endurance': 545, 'is_default': False},
-            {'id': 2, 'name': '长续航全轮驱动版', 'year': 2022, 'price': 31.99, 'endurance': 660, 'is_default': False},
-            {'id': 3, 'name': '长续航全轮驱动版', 'year': 2021, 'price': 34.99, 'endurance': 640, 'is_default': False},
-            {'id': 4, 'name': '长续航全轮驱动版 3D3/3D7', 'year': 2021, 'price': 33.99, 'endurance': 640, 'is_default': True},
-        ]
+        # 车型版本 - 从数据库读取真实数据
+        db_versions = CarVersion.objects.filter(car_series=car_series).order_by('-year', 'name')
+        versions = []
+        for idx, v in enumerate(db_versions):
+            versions.append({
+                'id': v.id,
+                'name': v.name,
+                'year': v.year,
+                'price': float(v.price) if v.price else None,
+                'endurance': v.endurance,
+                'is_default': idx == 0  # 第一个为默认
+            })
         
-        # 车身颜色 - 模拟数据
-        colors = [
-            {'id': 1, 'name': '冷光银', 'color_code': '#8B8B8B', 'image': None, 'is_default': True},
-            {'id': 2, 'name': '深海蓝', 'color_code': '#1E3A5F', 'image': None, 'is_default': False},
-            {'id': 3, 'name': '纯黑色', 'color_code': '#1C1C1C', 'image': None, 'is_default': False},
-            {'id': 4, 'name': '珠光白', 'color_code': '#F5F5F5', 'image': None, 'is_default': False},
-            {'id': 5, 'name': '中国红', 'color_code': '#C41E3A', 'image': None, 'is_default': False},
-        ]
+        # 如果没有版本数据，使用模拟数据
+        if not versions:
+            versions = [
+                {'id': 1, 'name': '标准版', 'year': 2025, 'price': float(car_series.price_min) if car_series.price_min else 25.0, 'endurance': car_series.endurance_min or 500, 'is_default': True},
+            ]
+        
+        # 车身颜色 - 从数据库读取真实数据
+        db_colors = CarColor.objects.filter(car_series=car_series)
+        colors = []
+        for idx, c in enumerate(db_colors):
+            colors.append({
+                'id': c.id,
+                'name': c.name,
+                'color_code': c.color_code or '#808080',
+                'image': c.image or car_series.image,  # 如果颜色没有图片，使用车系图片
+                'is_default': idx == 0  # 第一个为默认
+            })
+        
+        # 如果没有颜色数据，使用模拟数据
+        if not colors:
+            colors = [
+                {'id': 1, 'name': '默认', 'color_code': '#808080', 'image': car_series.image, 'is_default': True},
+            ]
         
         # 投诉统计
         issues = CarIssue.objects.filter(car_series=car_series)

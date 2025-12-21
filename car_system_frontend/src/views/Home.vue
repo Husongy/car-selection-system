@@ -57,7 +57,7 @@
           <!-- 中间：车辆图片 -->
           <div class="center-panel">
             <div class="car-image">
-              <img :src="currentCarImage" alt="车辆图片" @error="handleImageError" />
+              <img :src="currentCarImage" alt="车辆图片" referrerpolicy="no-referrer" @error="handleImageError" />
             </div>
 
             <!-- 版本选择 -->
@@ -209,21 +209,30 @@ let wordcloudChart: ECharts | null = null
 let timelineChart: ECharts | null = null
 let trendChart: ECharts | null = null
 
-// 默认车辆图片 - 使用稳定的占位图服务
-const defaultCarImage = 'https://via.placeholder.com/600x400/f5f5f5/666666?text=Car+Image'
+// 生成SVG占位图的Data URL
+const createPlaceholderSvg = (text: string, bgColor: string = '#f0f0f0', textColor: string = '#666') => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+    <rect width="600" height="400" fill="${bgColor}"/>
+    <text x="300" y="200" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="${textColor}" text-anchor="middle" dominant-baseline="middle">${text}</text>
+  </svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
 
-// 品牌图片映射（使用SVG占位符）
-const brandImages: Record<string, string> = {
-  '比亚迪': 'https://via.placeholder.com/600x400/1a73e8/ffffff?text=BYD',
-  '特斯拉': 'https://via.placeholder.com/600x400/cc0000/ffffff?text=Tesla',
-  '蓦来': 'https://via.placeholder.com/600x400/003366/ffffff?text=NIO',
-  '小鹏': 'https://via.placeholder.com/600x400/00cc66/ffffff?text=XPeng',
-  '理想': 'https://via.placeholder.com/600x400/0066cc/ffffff?text=LiAuto',
-  '问界': 'https://via.placeholder.com/600x400/ff6600/ffffff?text=AITO',
-  '极氪': 'https://via.placeholder.com/600x400/0099cc/ffffff?text=Zeekr',
-  '广汽埃安': 'https://via.placeholder.com/600x400/006699/ffffff?text=AION',
-  '哪吒': 'https://via.placeholder.com/600x400/ff3366/ffffff?text=Nezha',
-  '零跑': 'https://via.placeholder.com/600x400/9933cc/ffffff?text=Leapmotor',
+// 默认车辆图片
+const defaultCarImage = createPlaceholderSvg('车辆图片', '#f5f5f5', '#999')
+
+// 品牌图片映射 - 使用彩色SVG占位图
+const brandColors: Record<string, { bg: string; text: string }> = {
+  '特斯拉': { bg: '#cc0000', text: '#fff' },
+  '蔚来': { bg: '#003366', text: '#fff' },
+  '比亚迪': { bg: '#1a73e8', text: '#fff' },
+  '小鹏': { bg: '#ff6600', text: '#fff' },
+  '理想': { bg: '#00b4ff', text: '#fff' },
+  '广汽埃安': { bg: '#0066cc', text: '#fff' },
+  '零跑': { bg: '#ff3366', text: '#fff' },
+  '哪吒': { bg: '#6633cc', text: '#fff' },
+  '极氪': { bg: '#333333', text: '#fff' },
+  '问界': { bg: '#009966', text: '#fff' },
 }
 
 // 当前选中的颜色名称
@@ -236,13 +245,21 @@ const currentColorName = computed(() => {
 // 当前车辆图片
 const currentCarImage = computed(() => {
   if (!carData.value) return defaultCarImage
-  // 优先使用颜色图片，其次使用车系图片，然后使用品牌占位图，最后使用默认图
+  // 优先使用颜色图片，其次使用车系图片
   const color = carData.value.colors.find(c => c.id === selectedColorId.value)
   if (color?.image) return color.image
-  if (carData.value.basic_info.image) return carData.value.basic_info.image
-  // 使用品牌占位图
+  
+  // 检查车系图片是否为有效URL（排除无法访问的外部API）
+  const seriesImage = carData.value.basic_info.image
+  if (seriesImage && !seriesImage.includes('api.nio.com') && !seriesImage.includes('api.xpeng.com')) {
+    return seriesImage
+  }
+  
+  // 使用品牌彩色占位图
   const brandName = carData.value.basic_info.brand_name
-  return brandImages[brandName] || defaultCarImage
+  const carName = carData.value.basic_info.name
+  const colors = brandColors[brandName] || { bg: '#667788', text: '#fff' }
+  return createPlaceholderSvg(`${brandName} ${carName}`, colors.bg, colors.text)
 })
 
 // 格式化价格

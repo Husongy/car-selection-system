@@ -69,3 +69,25 @@ class CarIssueItem(scrapy.Item):
         if severity not in ['low', 'medium', 'high']:
             return False
         return True
+
+
+class CarSeriesItem(scrapy.Item):
+    """车系完整信息Item"""
+    brand_name = scrapy.Field()      # 品牌名称
+    series_name = scrapy.Field()     # 车系名称
+    fuel_type = scrapy.Field()       # 能源类型：BEV/PHEV/HEV
+    body_type = scrapy.Field()       # 车身类型：SUV/轿车/MPV
+    price_min = scrapy.Field()       # 最低价格（万）
+    price_max = scrapy.Field()       # 最高价格（万）
+    endurance_min = scrapy.Field()   # 最低续航（km）
+    endurance_max = scrapy.Field()   # 最高续航（km）
+    image_url = scrapy.Field()       # 车系图片URL
+    seat_count = scrapy.Field()      # 座位数
+    acceleration = scrapy.Field()    # 百公里加速
+    max_speed = scrapy.Field()       # 最高时速
+    
+    def is_valid(self):
+        """Validate data"""
+        if not self.get('brand_name') or not self.get('series_name'):
+            return False
+        return True

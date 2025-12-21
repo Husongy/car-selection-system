@@ -127,6 +127,17 @@ import { getBadReviewRank, type BadReviewRankItem } from '@/api/django-car'
 
 const message = useMessage()
 
+// 生成SVG占位图的Data URL
+const createPlaceholderSvg = (text: string, bgColor: string = '#f0f0f0', textColor: string = '#666') => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60" viewBox="0 0 80 60">
+    <rect width="80" height="60" fill="${bgColor}"/>
+    <text x="40" y="30" font-family="Arial" font-size="10" fill="${textColor}" text-anchor="middle" dominant-baseline="middle">${text}</text>
+  </svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+
+const defaultCarImage = createPlaceholderSvg('暂无图片', '#f5f5f5', '#999')
+
 // 响应式数据
 const loading = ref(false)
 const timeRange = ref('1y')
@@ -188,7 +199,8 @@ const columns: DataTableColumns<BadReviewRankItem> = [
           src: row.series_image,
           objectFit: 'cover',
           lazy: true,
-          fallbackSrc: 'https://via.placeholder.com/80x60?text=No+Image'
+          fallbackSrc: defaultCarImage,
+          imgProps: { referrerpolicy: 'no-referrer' }
         })
       }
       return h(NText, { depth: 3 }, { default: () => '暂无图片' })

@@ -84,6 +84,14 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '条件选车 (Django)'
     }
+  },
+  {
+    path: '/django/car-detail/:id',
+    name: 'CarDetail',
+    component: () => import('@/views/CarDetail.vue'),
+    meta: {
+      title: '车型详情'
+    }
   }
 ]
 
